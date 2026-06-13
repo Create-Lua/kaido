@@ -14,7 +14,7 @@ print("=================================\n")
 # -----------------------------
 # CONFIG
 # -----------------------------
-BASE_URL = "https://raw.githubusercontent.com/Create-Lua/kaido/main/release"
+BASE_URL = "https://raw.githubusercontent.com/Create-Lua/kaido/master/release"
 KAIDO_DIR = Path.home() / ".kaido"
 CLI_PATH = Path("/opt/homebrew/bin/kaido")
 
