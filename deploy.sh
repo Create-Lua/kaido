@@ -1,85 +1,65 @@
 #!/bin/bash
 
-set -e
-
 echo "================================="
 echo "   🚀 Kaido Full Build System"
 echo "================================="
 
-# -----------------------------
-# PATHS
-# -----------------------------
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES_DIR="$ROOT/packages"
-SOURCE_DIR="$PACKAGES_DIR/source"
 RELEASE_DIR="$ROOT/release"
+SOURCE_DIR="$RELEASE_DIR/source"  # optional if you ever modularize
 
-echo "📍 Root       : $ROOT"
-echo "📦 Packages   : $PACKAGES_DIR"
-echo "⚙️ Release    : $RELEASE_DIR"
-
-# -----------------------------
-# SYNC FIRST (IMPORTANT FIX)
-# -----------------------------
-echo ""
-echo "🔄 Syncing with GitHub..."
-
-git checkout main
-git fetch origin
-git pull --rebase origin main || true
+echo "📍 Root: $ROOT"
 
 # -----------------------------
-# BUILD PACKAGES
+# ASK VERSION
 # -----------------------------
 echo ""
-echo "📦 Building packages..."
+read -p "📦 Enter version (e.g. 1.0, 1.1, 2.0): " VERSION
 
-mkdir -p "$PACKAGES_DIR"
+if [ -z "$VERSION" ]; then
+    echo "❌ Version cannot be empty"
+    exit 1
+fi
 
-for dir in "$SOURCE_DIR"/*/; do
-    [ -d "$dir" ] || continue
-
-    name=$(basename "$dir")
-    zip_path="$PACKAGES_DIR/$name.zip"
-
-    echo "→ Package: $name"
-
-    rm -f "$zip_path"
-
-    (
-        cd "$dir"
-        zip -r "$zip_path" . > /dev/null
-    )
-
-    echo "✔ Built package: $zip_path"
-done
+echo ""
+echo "🔨 Building version: $VERSION"
 
 # -----------------------------
-# BUILD CORE RELEASES
+# BUILD CORE VERSION ZIP
+# -----------------------------
+VERSION_DIR="$RELEASE_DIR/$VERSION"
+VERSION_ZIP="$RELEASE_DIR/$VERSION.zip"
+LATEST_ZIP="$RELEASE_DIR/latest.zip"
+
+if [ ! -d "$VERSION_DIR" ]; then
+    echo "❌ Version folder not found: $VERSION_DIR"
+    exit 1
+fi
+
+echo "📦 Creating $VERSION.zip..."
+
+rm -f "$VERSION_ZIP"
+
+(
+    cd "$VERSION_DIR" || exit
+    zip -r "$VERSION_ZIP" . > /dev/null
+)
+
+echo "✔ Built: $VERSION.zip"
+
+# -----------------------------
+# UPDATE LATEST
 # -----------------------------
 echo ""
-echo "⚙️ Building core releases..."
+echo "🧪 Updating latest.zip..."
 
-for core_dir in "$RELEASE_DIR"/*/; do
-    [ -d "$core_dir" ] || continue
+rm -f "$LATEST_ZIP"
+cp "$VERSION_ZIP" "$LATEST_ZIP"
 
-    version=$(basename "$core_dir")
-    zip_path="$RELEASE_DIR/$version.zip"
-
-    echo "→ Core version: $version"
-
-    rm -f "$zip_path"
-
-    (
-        cd "$core_dir"
-        zip -r "$zip_path" . > /dev/null
-    )
-
-    echo "✔ Built core: $zip_path"
-done
+echo "✔ Updated latest.zip"
 
 # -----------------------------
-# GIT COMMIT LOGIC
+# GIT COMMIT
 # -----------------------------
 echo ""
 echo "📡 Preparing Git commit..."
@@ -88,13 +68,10 @@ git add -A
 
 if git diff --cached --quiet; then
     echo "⚠️ No changes to commit"
-    echo "================================="
-    echo "✔ Build complete (nothing to push)"
-    echo "================================="
     exit 0
 fi
 
-git commit -m "kaido build (packages + core) $(date '+%Y-%m-%d %H:%M:%S')"
+git commit -m "kaido release v$VERSION (update latest)"
 
 # -----------------------------
 # PUSH
@@ -102,6 +79,7 @@ git commit -m "kaido build (packages + core) $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 echo "🚀 Pushing to GitHub..."
 
+git pull --rebase origin main
 git push origin main
 
 # -----------------------------
@@ -109,5 +87,7 @@ git push origin main
 # -----------------------------
 echo ""
 echo "================================="
-echo "✔ Full Kaido build complete"
+echo "✔ Kaido build complete"
+echo "📦 Version: $VERSION"
+echo "📦 Latest updated"
 echo "================================="
