@@ -11,11 +11,11 @@ from tools.compiler import compile_package
 KAIDO_DIR = Path.home() / ".kaido"
 PACKAGES_DIR = KAIDO_DIR / "packages"
 
-BASE_URL = "https://raw.githubusercontent.com/Create-Lua/kaido/main/release"
+BASE_URL = "https://raw.githubusercontent.com/Create-Lua/kaido/main/packages"
 
 
 def install(pkg_name):
-    url = f"{BASE_URL}/{pkg_name}.zip?v={int(time.time())}"
+    url = f"{BASE_URL}/{pkg_name}.zip"
 
     print("Downloading...")
     r = requests.get(url)
